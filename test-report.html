@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>开局登录测试报告</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #F6F8F5; --surface: #FFFFFF; --ink: #1A1F1B; --muted: #5F6862; --line: #D8DED9;
+  --accent: #1E6B47; --accent-soft: #E3F0E8; --bad: #B42318; --bad-soft: #FBE9E7; --none: #8A6D1A; --none-soft: #F7EFD6;
+  --sans: "IBM Plex Sans", -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, "PingFang SC", "Microsoft YaHei", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131714; --surface: #1B201C; --ink: #E7ECE8; --muted: #9AA59D; --line: #2E3630;
+    --accent: #5FBF8E; --accent-soft: #1C3328; --bad: #F08A80; --bad-soft: #3B1F1C; --none: #D9B45A; --none-soft: #3A3120;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131714; --surface: #1B201C; --ink: #E7ECE8; --muted: #9AA59D; --line: #2E3630;
+  --accent: #5FBF8E; --accent-soft: #1C3328; --bad: #F08A80; --bad-soft: #3B1F1C; --none: #D9B45A; --none-soft: #3A3120;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+main { max-width: 76ch; margin: 0 auto; padding: 40px 20px 80px; display: flex; flex-direction: column; gap: 40px; }
+h1, h2 { text-wrap: balance; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 26px; }
+h2 { font-size: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+code { font-family: var(--mono); font-size: 0.92em; background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; }
+header { display: flex; flex-direction: column; gap: 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--muted); }
+.figures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.figure { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.figure .n { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.figure .n.bad { color: var(--bad); }
+.figure .n.ok { color: var(--accent); }
+.figure .l { font-size: 12px; color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; font-weight: 500; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.mono { font-size: 12px; color: var(--muted); }
+.pill { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill-pass { background: var(--accent-soft); color: var(--accent); }
+.pill-fail { background: var(--bad-soft); color: var(--bad); }
+.pill-none { background: var(--none-soft); color: var(--none); }
+details { border: 1px solid var(--line); background: var(--surface); }
+summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 14px; align-items: baseline; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸"; color: var(--muted); font-size: 12px; }
+details[open] summary::before { content: "▾"; }
+summary .file { font-size: 13px; font-weight: 500; }
+summary .file-label { color: var(--muted); font-size: 13px; flex: 1; }
+summary .count { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+summary .count.bad { color: var(--bad); }
+.cases { list-style: none; margin: 0; padding: 0 14px 10px; display: flex; flex-direction: column; }
+.case { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+.case .mark { font-weight: 600; color: var(--accent); }
+.case.bad .mark { color: var(--bad); }
+.case .dur { font-size: 12px; color: var(--muted); }
+.err { grid-column: 2 / -1; margin: 4px 0 0; padding: 8px 10px; background: var(--bad-soft); color: var(--ink); font-family: var(--mono); font-size: 12px; white-space: pre-wrap; overflow-x: auto; }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; counter-reset: step; }
+.checks li { border-top: 1px solid var(--line); }
+.checks li:last-child { border-bottom: 1px solid var(--line); }
+.checks label { display: grid; grid-template-columns: 22px 1fr; gap: 12px; padding: 10px 4px; cursor: pointer; align-items: start; }
+.checks input { width: 16px; height: 16px; margin-top: 3px; accent-color: var(--accent); }
+.checks input:checked + span { color: var(--muted); }
+.checks strong { font-weight: 600; margin-right: 6px; }
+.checks input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+@media (max-width: 560px) { .figures { grid-template-columns: repeat(2, 1fr); } .case { grid-template-columns: 18px 1fr; } .case .dur { grid-column: 2; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">开局 · magic-link · 自动化测试报告</div>
+    <h1>无密码登录：全部通过</h1>
+    <p>下面第一张表把计划书 4.2 / 5.6 的每条规则对应到证明它的测试；第二部分是每个测试文件的逐条结果；最后是需要人手动走一遍的验收清单。</p>
+    <div class="meta">
+      <span>生成时间 2026/9/12 23:33:59（多伦多）</span>
+      <span>提交 <span class="mono">055ea45</span></span>
+      <span>Node v24.19.0</span>
+      <span>运行方式 <span class="mono">npm run test:report</span></span>
+    </div>
+  </header>
+
+  <div class="figures" role="group" aria-label="汇总">
+    <div class="figure"><span class="n">65</span><span class="l">测试用例</span></div>
+    <div class="figure"><span class="n ok">65</span><span class="l">通过</span></div>
+    <div class="figure"><span class="n ">0</span><span class="l">失败</span></div>
+    <div class="figure"><span class="n">82<span class="small muted"> ms</span></span><span class="l">用例总耗时</span></div>
+  </div>
+
+  <section>
+    <h2>规则覆盖</h2>
+    <p class="muted small">"无测试"表示还没有自动化用例覆盖这条规则，需要在下面的人工清单里验证。</p>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>状态</th><th>规则</th><th>出处</th><th>证明它的测试</th></tr></thead>
+      <tbody>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>邮箱 magic link 登录，一封邮件同时带链接与 6 位码</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>subject carries the app name and the code (visible in WeChat notifications)</div><div>requestLink sends one email carrying a link and a 6-digit code</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>链接 15 分钟有效</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>link and code expire after 15 minutes</div><div>link still works one second before expiry</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>链接单次使用</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>POST /auth/verify maps failures to status codes</div><div>link logs in exactly once and creates the user</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>6 位码是链接的等价物（微信内使用），用其一另一个作废</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>code logs in and burns the link from the same email</div><div>link burns the code from the same email</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>6 位码错误次数上限，超过后作废</td>
+  <td class="muted">计划书 5.6 认证安全</td>
+  <td class="mono small"><div>too many wrong codes → 429</div><div>five wrong codes burn the pending login, including its link</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>同一邮箱 10 分钟最多 3 封、每天最多 10 封</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>per-email rate limit: 3 per 10 minutes, then retry-after</div><div>per-email daily cap: 10 per day</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>登录与验证接口按 IP 限流</td>
+  <td class="muted">计划书 5.6</td>
+  <td class="mono small"><div>rate limited request → 429 with Retry-After</div><div>per-IP limit applies across different emails</div><div>verification attempts are rate limited per IP</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>会话 cookie 30 天，HttpOnly + Secure + SameSite=Lax</td>
+  <td class="muted">计划书 4.2</td>
+  <td class="mono small"><div>session lasts 30 days and logout revokes it</div><div>session cookie has the attributes from plan §4.2</div><div>serializeSessionCookie emits the plan §4.2 attributes and encodes the value</div><div>SessionService: expiry is exactly 30 days from creation</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>会话固定防护：登录时吊销旧会话</td>
+  <td class="muted">计划书 5.6</td>
+  <td class="mono small"><div>session fixation: the pre-login session is revoked on login</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>CSRF：SameSite cookie + Origin 校验</td>
+  <td class="muted">计划书 5.6 应用安全</td>
+  <td class="mono small"><div>POST /auth/magic-link: invalid email → 400, foreign Origin → 403, GET → 405</div><div>Referer is accepted in place of Origin (older WeChat webviews)</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>不存明文：token、6 位码、会话只存 HMAC</td>
+  <td class="muted">安全设计</td>
+  <td class="mono small"><div>hmac is deterministic, keyed, and domain-separated by purpose</div><div>raw token and code are never stored, only keyed hashes</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>邮件扫描器的 GET 不消耗链接</td>
+  <td class="muted">安全设计</td>
+  <td class="mono small"><div>GET /auth/verify renders a self-submitting form and does not consume the link</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>next 只接受站内路径（防开放重定向）</td>
+  <td class="muted">安全设计</td>
+  <td class="mono small"><div>POST /auth/verify (form) logs in, sets the cookie and redirects to a safe next</div><div>resolveNextPath: onboarding for new users, safe relative paths otherwise</div><div>safeRelativePath blocks open-redirect shapes</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>新用户首次登录进入 /onboarding</td>
+  <td class="muted">计划书 4.1</td>
+  <td class="mono small"><div>POST /auth/verify (form) logs in, sets the cookie and redirects to a safe next</div><div>POST /auth/verify-code logs in with JSON and returns redirectTo</div><div>resolveNextPath: onboarding for new users, safe relative paths otherwise</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>被封禁账号不能登录</td>
+  <td class="muted">计划书 5.3 users.status</td>
+  <td class="mono small"><div>PgUserStore.canLogin is false for banned and for missing users</div><div>banned users cannot log in</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>退出登录吊销会话并清 cookie</td>
+  <td class="muted">计划书 4.1 设置页</td>
+  <td class="mono small"><div>POST /auth/logout clears the cookie and kills the session</div><div>session lasts 30 days and logout revokes it</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>所有输入经 zod 校验，SQL 全部参数化</td>
+  <td class="muted">计划书 5.6 应用安全</td>
+  <td class="mono small"><div>PgTokenStore maps rows to records and back</div><div>requestLink rejects malformed addresses without sending</div><div>garbage tokens and codes are rejected without touching stores</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>Postgres 存储的原子消耗与并发创建用户</td>
+  <td class="muted">实现</td>
+  <td class="mono small"><div>PgTokenStore.consume only succeeds when consumed_at is still null</div><div>PgUserStore.findOrCreateByEmail creates once and tolerates a racing insert</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>过期数据清理（Cron）</td>
+  <td class="muted">计划书 5.2 后台任务</td>
+  <td class="mono small"><div>purgeExpired removes stale tokens and sessions</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>邮件文案：中文为主、含英文一句、转义</td>
+  <td class="muted">计划书 4.14</td>
+  <td class="mono small"><div>text and html both contain the link, the code, the TTL and the &quot;ignore if not you&quot; line</div><div>html escapes attacker-influenced values</div></td>
+</tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>逐条结果</h2>
+<details open>
+  <summary><span class="file mono">crypto.test.ts</span><span class="file-label">随机数与哈希 crypto.ts</span><span class="count ">7/7</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">randomToken: 256 bits, base64url, unique</span>
+  <span class="dur mono">1.7 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">randomCode: always exactly six digits, including leading zeros</span>
+  <span class="dur mono">4.2 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">newId is a v4 UUID</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">hmac is deterministic, keyed, and domain-separated by purpose</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">safeEqualHex compares digests without throwing on length mismatch</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">normalizeEmail trims and lower-cases</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">normalizeCode keeps digits only</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">email-template.test.ts</span><span class="file-label">登录邮件 email-template.ts</span><span class="count ">3/3</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">subject carries the app name and the code (visible in WeChat notifications)</span>
+  <span class="dur mono">1.2 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">text and html both contain the link, the code, the TTL and the &quot;ignore if not you&quot; line</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">html escapes attacker-influenced values</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">http.test.ts</span><span class="file-label">HTTP 处理器 http.ts</span><span class="count ">13/13</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/magic-link accepts JSON and returns 202 with the normalised email</span>
+  <span class="dur mono">22 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/magic-link: invalid email → 400, foreign Origin → 403, GET → 405</span>
+  <span class="dur mono">2.4 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">Referer is accepted in place of Origin (older WeChat webviews)</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">rate limited request → 429 with Retry-After</span>
+  <span class="dur mono">2.3 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">client IP comes from X-Forwarded-For when trustProxy is on</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">GET /auth/verify renders a self-submitting form and does not consume the link</span>
+  <span class="dur mono">1.8 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">GET /auth/verify escapes attacker-controlled query values</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/verify (form) logs in, sets the cookie and redirects to a safe next</span>
+  <span class="dur mono">5.6 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/verify maps failures to status codes</span>
+  <span class="dur mono">2.4 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/verify-code logs in with JSON and returns redirectTo</span>
+  <span class="dur mono">1.5 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">too many wrong codes → 429</span>
+  <span class="dur mono">1.1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">POST /auth/logout clears the cookie and kills the session</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">GET /auth/me without a cookie → 401</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">postgres.test.ts</span><span class="file-label">Postgres 存储 stores/postgres.ts</span><span class="count ">6/6</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgTokenStore.consume only succeeds when consumed_at is still null</span>
+  <span class="dur mono">1.2 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgTokenStore maps rows to records and back</span>
+  <span class="dur mono">1.0 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgTokenStore.findLatestActiveByEmail orders newest first and skips consumed</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgSessionStore.revokeAllForUser returns the number of sessions revoked</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgUserStore.findOrCreateByEmail creates once and tolerates a racing insert</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">PgUserStore.canLogin is false for banned and for missing users</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">rate-limit.test.ts</span><span class="file-label">限流 rate-limit.ts</span><span class="count ">6/6</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">allows up to max hits in the window, then blocks with retryAfterMs</span>
+  <span class="dur mono">1.4 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">the window slides: the oldest hit falling out frees one slot</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">blocked attempts do not extend the block</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">keys are independent</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">prune drops keys with no recent hits</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">unlimited never blocks</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">service.test.ts</span><span class="file-label">核心流程 service.ts</span><span class="count ">24/24</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">requestLink sends one email carrying a link and a 6-digit code</span>
+  <span class="dur mono">3.5 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">requestLink rejects malformed addresses without sending</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">raw token and code are never stored, only keyed hashes</span>
+  <span class="dur mono">1.6 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">link logs in exactly once and creates the user</span>
+  <span class="dur mono">1.2 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">code logs in and burns the link from the same email</span>
+  <span class="dur mono">1.1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">link burns the code from the same email</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">second login for the same email reuses the user and is not new</span>
+  <span class="dur mono">1.0 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">link and code expire after 15 minutes</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">link still works one second before expiry</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">a newer request invalidates the previous link and code</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">five wrong codes burn the pending login, including its link</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">garbage tokens and codes are rejected without touching stores</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">per-email rate limit: 3 per 10 minutes, then retry-after</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">per-email daily cap: 10 per day</span>
+  <span class="dur mono">1.0 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">per-IP limit applies across different emails</span>
+  <span class="dur mono">1.0 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">verification attempts are rate limited per IP</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">session fixation: the pre-login session is revoked on login</span>
+  <span class="dur mono">1.7 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">session lasts 30 days and logout revokes it</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">session cookie has the attributes from plan §4.2</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">banned users cannot log in</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">resolveNextPath: onboarding for new users, safe relative paths otherwise</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">safeRelativePath blocks open-redirect shapes</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">purgeExpired removes stale tokens and sessions</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">config guards: short secret, non-https base URL, insecure cookie off localhost</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+<details open>
+  <summary><span class="file mono">session.test.ts</span><span class="file-label">会话与 cookie session.ts</span><span class="count ">6/6</span></summary>
+  <ul class="cases"><li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">serializeSessionCookie emits the plan §4.2 attributes and encodes the value</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">readCookie finds the named cookie among others and tolerates junk</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: create → resolve → revoke</span>
+  <span class="dur mono">1.7 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: lastSeenAt is touched at most once a minute</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: expiry is exactly 30 days from creation</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: revokeAllForUser only touches that user</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li></ul>
+</details>
+  </section>
+
+  <section>
+    <h2>人工验收清单</h2>
+    <p class="muted small">这些项靠眼睛和真实邮箱验证，自动化测不到。勾选状态只保存在你自己的浏览器里。</p>
+    <ol class="checks">
+<li>
+  <label><input type="checkbox" data-key="ml-check-0"><span><strong>启动</strong> <code>npm run dev</code>，打开 http://localhost:3000/login，页面显示邮箱输入框。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-1"><span><strong>发送</strong> 输入邮箱提交，页面提示&quot;邮件已发送&quot;，终端打印一封邮件：标题含 6 位码，正文含链接与同一个 6 位码。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-2"><span><strong>链接登录</strong> 复制终端里的链接到浏览器：先看到&quot;正在登录…&quot;页并自动跳转；新用户落在 /onboarding，返回首页显示&quot;已登录&quot;与用户 ID。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-3"><span><strong>链接只用一次</strong> 再次打开同一链接，收到 410 与提示&quot;这个链接已经用过了&quot;。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-4"><span><strong>6 位码登录</strong> 重新发送一封；在登录页输入 6 位码（可带空格），直接进入站内，不经过邮件客户端。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-5"><span><strong>错码保护</strong> 连续输错 5 次，第 5 次返回 429&quot;错误次数太多&quot;；之后正确的码与同封邮件的链接都失效。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-6"><span><strong>限流</strong> 同一邮箱 10 分钟内第 4 次发送返回 429，响应带 Retry-After。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-7"><span><strong>过期</strong> 把 <code>linkTtlMs</code> 临时改小或等 15 分钟，链接与码都返回&quot;已过期&quot;。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-8"><span><strong>退出</strong> 首页点&quot;退出登录&quot;，回到未登录状态；浏览器里的旧 cookie 再访问 /auth/me 得 401。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-9"><span><strong>跨站</strong> 用 curl 带 <code>Origin: https://evil.test</code> POST /auth/magic-link，得 403。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-10"><span><strong>重定向</strong> 带 <code>next=https://evil.test</code> 登录，落在首页而不是外站。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-11"><span><strong>邮件观感</strong> 用 Resend 真实发一封到手机：微信通知栏能看到标题里的 6 位码；邮件在深色模式下可读。</span></label>
+</li>
+    </ol>
+  </section>
+
+  <footer>报告由 <span class="mono">scripts/test-report.ts</span> 生成；测试文件在 <span class="mono">test/</span>，规则来源为《开局-项目计划书》。</footer>
+</main>
+<script>
+(function () {
+  var boxes = document.querySelectorAll('.checks input[type=checkbox]');
+  boxes.forEach(function (b) {
+    try { b.checked = localStorage.getItem(b.dataset.key) === '1'; } catch (e) {}
+    b.addEventListener('change', function () {
+      try { localStorage.setItem(b.dataset.key, b.checked ? '1' : '0'); } catch (e) {}
+    });
+  });
+})();
+</script>
+</body>
+</html>
