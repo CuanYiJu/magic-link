@@ -217,6 +217,10 @@ SMTP_PASS=<Cloudflare API token>
 
 另外两个容易混淆的 Cloudflare 免费功能与发信无关：Email Routing 是**收信**转发（免费、不限量）；Cloudflare DNS 免费托管域名，任何路线都可以用它来放 SPF / DKIM / DMARC 记录。
 
+**Mailjet 的一个坑：发件地址没验证时，邮件被静默丢弃**
+
+Mailjet 对没验证的发件地址不会在 SMTP 层报错：服务器照样回 250，本包返回 202，但邮件既不投递也不进 Mailjet 的消息记录。2026-09-13 实测：`EMAIL_FROM` 写成未验证的 `no-reply@juer.com` 时什么都收不到，改成域名已验证的 `login@juer.now` 后立刻 `sent`。所以 `EMAIL_FROM` 只能用「Sender addresses & domains」里状态为 Active 的地址（整个域名验证过的话任意前缀都行），换过发件地址后发一封测试并到 Mailjet 的 Statistics 里确认出现记录。Mailjet SMTP 参数：`in-v3.mailjet.com`，587（STARTTLS）或 465（TLS），用户名 = API Key，密码 = Secret Key。
+
 **免费额度不够用时怎么办**
 
 每天 100 封是 Resend 免费档的规则，不是邮件本身的限制。三个方向：花一点钱、换免费额度更高的服务商、少发。2026-09-13 核对的数字（Brevo 当天页面拒绝抓取，按其一贯政策填写，用前再看一眼）：
