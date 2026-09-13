@@ -86,18 +86,18 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <h1>无密码登录：全部通过</h1>
     <p>下面第一张表把计划书 4.2 / 5.6 的每条规则对应到证明它的测试；第二部分是每个测试文件的逐条结果；最后是需要人手动走一遍的验收清单。</p>
     <div class="meta">
-      <span>生成时间 2026/9/13 00:04:00（多伦多）</span>
-      <span>提交 <span class="mono">e945892</span></span>
+      <span>生成时间 2026/9/13 00:21:37（多伦多）</span>
+      <span>提交 <span class="mono">cbc45d0</span></span>
       <span>Node v24.19.0</span>
       <span>运行方式 <span class="mono">npm run test:report</span></span>
     </div>
   </header>
 
   <div class="figures" role="group" aria-label="汇总">
-    <div class="figure"><span class="n">71</span><span class="l">测试用例</span></div>
-    <div class="figure"><span class="n ok">71</span><span class="l">通过</span></div>
+    <div class="figure"><span class="n">77</span><span class="l">测试用例</span></div>
+    <div class="figure"><span class="n ok">77</span><span class="l">通过</span></div>
     <div class="figure"><span class="n ">0</span><span class="l">失败</span></div>
-    <div class="figure"><span class="n">81<span class="small muted"> ms</span></span><span class="l">用例总耗时</span></div>
+    <div class="figure"><span class="n">105<span class="small muted"> ms</span></span><span class="l">用例总耗时</span></div>
   </div>
 
   <section>
@@ -153,13 +153,25 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <td><span class="pill pill-pass">通过</span></td>
   <td>会话 cookie 30 天，HttpOnly + Secure + SameSite=Lax</td>
   <td class="muted">计划书 4.2</td>
-  <td class="mono small"><div>session lasts 30 days and logout revokes it</div><div>session cookie has the attributes from plan §4.2</div><div>serializeSessionCookie emits the plan §4.2 attributes and encodes the value</div><div>SessionService: expiry is exactly 30 days from creation</div></td>
+  <td class="mono small"><div>session lasts 30 days of inactivity, slides on use, and logout revokes it</div><div>session cookie has the attributes from plan §4.2</div><div>serializeSessionCookie emits the plan §4.2 attributes, Max-Age and Expires, and encodes the value</div></td>
 </tr>
 <tr>
   <td><span class="pill pill-pass">通过</span></td>
   <td>会话固定防护：登录时吊销旧会话</td>
   <td class="muted">计划书 5.6</td>
   <td class="mono small"><div>session fixation: the pre-login session is revoked on login</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>会话滑动续期：活跃用户顺延，一天最多一次，不超过绝对上限</td>
+  <td class="muted">实现选择</td>
+  <td class="mono small"><div>sliding expiry: /auth/me and getSession re-issue the cookie once a day of activity has passed</div><div>session lasts 30 days of inactivity, slides on use, and logout revokes it</div><div>sliding expiry can be turned off: then the session ends 30 days after login regardless of use</div><div>SessionService: initial expiry is 30 days; without sliding it is absolute</div><div>SessionService: sliding expiry renews at most once a day and moves expiresAt forward</div><div>SessionService: a user active every week stays logged in past 30 days, but not past the absolute cap</div><div>SessionService: renewal never extends past createdAt + absolute max</div></td>
+</tr>
+<tr>
+  <td><span class="pill pill-pass">通过</span></td>
+  <td>邮件发送失败时给用户友好提示、不留悬空 token</td>
+  <td class="muted">实现选择</td>
+  <td class="mono small"><div>mail provider failure → 503 with a friendly message and Retry-After, no detail leaked</div><div>mailer failure: send_failed, nothing left pending, cause logged, next attempt works</div></td>
 </tr>
 <tr>
   <td><span class="pill pill-pass">通过</span></td>
@@ -201,7 +213,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <td><span class="pill pill-pass">通过</span></td>
   <td>退出登录吊销会话并清 cookie</td>
   <td class="muted">计划书 4.1 设置页</td>
-  <td class="mono small"><div>POST /auth/logout clears the cookie and kills the session</div><div>session lasts 30 days and logout revokes it</div></td>
+  <td class="mono small"><div>POST /auth/logout clears the cookie and kills the session</div><div>session lasts 30 days of inactivity, slides on use, and logout revokes it</div></td>
 </tr>
 <tr>
   <td><span class="pill pill-pass">通过</span></td>
@@ -239,13 +251,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">randomToken: 256 bits, base64url, unique</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono">2.9 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">randomCode: always exactly six digits, including leading zeros</span>
-  <span class="dur mono">5.1 ms</span>
+  <span class="dur mono">4.7 ms</span>
   
 </li>
 <li class="case ok">
@@ -301,17 +313,17 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </li></ul>
 </details>
 <details open>
-  <summary><span class="file mono">http.test.ts</span><span class="file-label">HTTP 处理器 http.ts</span><span class="count ">14/14</span></summary>
+  <summary><span class="file mono">http.test.ts</span><span class="file-label">HTTP 处理器 http.ts</span><span class="count ">15/15</span></summary>
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/magic-link accepts JSON and returns 202 with the normalised email</span>
-  <span class="dur mono">23 ms</span>
+  <span class="dur mono">26 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/magic-link: invalid email → 400, foreign Origin → 403, GET → 405</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono">1.5 ms</span>
   
 </li>
 <li class="case ok">
@@ -323,19 +335,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">rate limited request → 429 with Retry-After</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono">2.7 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">client IP comes from X-Forwarded-For when trustProxy is on</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.0 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">GET /auth/verify renders a self-submitting form and does not consume the link</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono">1.6 ms</span>
   
 </li>
 <li class="case ok">
@@ -347,31 +359,31 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/verify (form) logs in, sets the cookie and redirects to a safe next</span>
-  <span class="dur mono">4.0 ms</span>
+  <span class="dur mono">6.3 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/verify maps failures to status codes</span>
-  <span class="dur mono">1.8 ms</span>
+  <span class="dur mono">1.9 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/verify-code logs in with JSON and returns redirectTo</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">too many wrong codes → 429</span>
-  <span class="dur mono">1.1 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/logout clears the cookie and kills the session</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.8 ms</span>
   
 </li>
 <li class="case ok">
@@ -385,6 +397,12 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <span class="name">mail provider failure → 503 with a friendly message and Retry-After, no detail leaked</span>
   <span class="dur mono"><1 ms</span>
   
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">sliding expiry: /auth/me and getSession re-issue the cookie once a day of activity has passed</span>
+  <span class="dur mono">1.2 ms</span>
+  
 </li></ul>
 </details>
 <details open>
@@ -392,13 +410,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">PgTokenStore.consume only succeeds when consumed_at is still null</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono">1.5 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">PgTokenStore maps rows to records and back</span>
-  <span class="dur mono">1.4 ms</span>
+  <span class="dur mono">1.1 ms</span>
   
 </li>
 <li class="case ok">
@@ -416,7 +434,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">PgUserStore.findOrCreateByEmail creates once and tolerates a racing insert</span>
-  <span class="dur mono">1.0 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
@@ -431,7 +449,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">allows up to max hits in the window, then blocks with retryAfterMs</span>
-  <span class="dur mono">1.7 ms</span>
+  <span class="dur mono">2.8 ms</span>
   
 </li>
 <li class="case ok">
@@ -461,16 +479,16 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">unlimited never blocks</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">2.3 ms</span>
   
 </li></ul>
 </details>
 <details open>
-  <summary><span class="file mono">service.test.ts</span><span class="file-label">核心流程 service.ts</span><span class="count ">25/25</span></summary>
+  <summary><span class="file mono">service.test.ts</span><span class="file-label">核心流程 service.ts</span><span class="count ">26/26</span></summary>
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">requestLink sends one email carrying a link and a 6-digit code</span>
-  <span class="dur mono">3.7 ms</span>
+  <span class="dur mono">5.0 ms</span>
   
 </li>
 <li class="case ok">
@@ -482,31 +500,31 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">raw token and code are never stored, only keyed hashes</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono">1.6 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">link logs in exactly once and creates the user</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">code logs in and burns the link from the same email</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.6 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">link burns the code from the same email</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.6 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">second login for the same email reuses the user and is not new</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li>
 <li class="case ok">
@@ -548,36 +566,42 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">per-email daily cap: 10 per day</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.2 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">per-IP limit applies across different emails</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.0 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">verification attempts are rate limited per IP</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.7 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">session fixation: the pre-login session is revoked on login</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
-  <span class="name">session lasts 30 days and logout revokes it</span>
+  <span class="name">session lasts 30 days of inactivity, slides on use, and logout revokes it</span>
   <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">session cookie has the attributes from plan §4.2</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">sliding expiry can be turned off: then the session ends 30 days after login regardless of use</span>
   <span class="dur mono"><1 ms</span>
   
 </li>
@@ -619,11 +643,11 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </li></ul>
 </details>
 <details open>
-  <summary><span class="file mono">session.test.ts</span><span class="file-label">会话与 cookie session.ts</span><span class="count ">6/6</span></summary>
+  <summary><span class="file mono">session.test.ts</span><span class="file-label">会话与 cookie session.ts</span><span class="count ">10/10</span></summary>
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
-  <span class="name">serializeSessionCookie emits the plan §4.2 attributes and encodes the value</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="name">serializeSessionCookie emits the plan §4.2 attributes, Max-Age and Expires, and encodes the value</span>
+  <span class="dur mono">2.9 ms</span>
   
 </li>
 <li class="case ok">
@@ -635,7 +659,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: create → resolve → revoke</span>
-  <span class="dur mono">2.8 ms</span>
+  <span class="dur mono">1.4 ms</span>
   
 </li>
 <li class="case ok">
@@ -646,14 +670,38 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
-  <span class="name">SessionService: expiry is exactly 30 days from creation</span>
+  <span class="name">SessionService: initial expiry is 30 days; without sliding it is absolute</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: sliding expiry renews at most once a day and moves expiresAt forward</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: a user active every week stays logged in past 30 days, but not past the absolute cap</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService: renewal never extends past createdAt + absolute max</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">SessionService.cookie: Max-Age matches the session expiry, not always 30 days</span>
   <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: revokeAllForUser only touches that user</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li></ul>
 </details>
@@ -662,7 +710,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SmtpMailer hands the message to the transport unchanged</span>
-  <span class="dur mono">1.1 ms</span>
+  <span class="dur mono">1.2 ms</span>
   
 </li>
 <li class="case ok">
@@ -725,6 +773,12 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </li>
 <li>
   <label><input type="checkbox" data-key="ml-check-11"><span><strong>邮件观感</strong> 用 Resend 真实发一封到手机：微信通知栏能看到标题里的 6 位码；邮件在深色模式下可读。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-12"><span><strong>微信内会话保持</strong> 在真机（iPhone 与 Android 各一台）的微信里打开活动链接、用 6 位码登录；杀掉微信，第二天再从群里点一个活动链接，应仍是登录状态。微信&quot;清理缓存&quot;后需重新登录属正常。</span></label>
+</li>
+<li>
+  <label><input type="checkbox" data-key="ml-check-13"><span><strong>滑动续期</strong> 登录后把系统时间调后 2 天再访问任一页面，响应里应带新的 Set-Cookie（Max-Age 回到 30 天）；调后 31 天且期间没有访问，应退回未登录。</span></label>
 </li>
     </ol>
   </section>

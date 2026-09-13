@@ -36,10 +36,14 @@ export interface MagicLinkHandlers {
   verifyCode(req: Request): Promise<Response>;
   /** POST → 204 with a cleared cookie. */
   logout(req: Request): Promise<Response>;
-  /** GET → 200 { userId } or 401. Handy for the client to know if it is logged in. */
+  /** GET → 200 { userId } or 401. Re-issues the cookie when the session was just extended. */
   me(req: Request): Promise<Response>;
-  /** For your own routes: resolve the session from a request. */
-  getSession(req: Request): Promise<{ userId: string } | null>;
+  /**
+   * For your own routes: resolve the session from a request. When `setCookie`
+   * is present the session was just extended; add it as a Set-Cookie header
+   * on your response so the browser's cookie is extended as well.
+   */
+  getSession(req: Request): Promise<{ userId: string; setCookie?: string } | null>;
 }
 
 const STATUS_CODES: Record<Exclude<LoginResult['status'], 'ok'>, number> = {
@@ -185,12 +189,15 @@ export function createHandlers(service: MagicLinkService, options: HttpOptions):
     async me(req) {
       const session = await service.getSession(readCookie(req.headers.get('cookie'), cookieName));
       if (!session) return json({ status: 'anonymous' }, 401);
-      return json({ status: 'ok', userId: session.userId, expiresAt: session.session.expiresAt.toISOString() });
+      const headers: Record<string, string> = {};
+      if (session.setCookie) headers['Set-Cookie'] = session.setCookie;
+      return json({ status: 'ok', userId: session.userId, expiresAt: session.session.expiresAt.toISOString() }, 200, headers);
     },
 
     async getSession(req) {
       const session = await service.getSession(readCookie(req.headers.get('cookie'), cookieName));
-      return session ? { userId: session.userId } : null;
+      if (!session) return null;
+      return session.setCookie ? { userId: session.userId, setCookie: session.setCookie } : { userId: session.userId };
     },
   };
 }

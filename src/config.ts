@@ -15,8 +15,14 @@ export interface MagicLinkConfig {
   linkTtlMs: number;
   /** Wrong 6-digit codes tolerated per link before it is burned. */
   maxCodeAttempts: number;
-  /** Session lifetime. Plan §4.2: 30 days. */
+  /** Session lifetime. Plan §4.2: 30 days. With sliding on, this is 30 days of inactivity. */
   sessionTtlMs: number;
+  /** Extend the session on activity so regular users never hit the 30-day wall. */
+  sessionSliding: boolean;
+  /** How often at most a session is extended (and the cookie re-issued). Default 1 day. */
+  sessionRenewAfterMs: number;
+  /** Hard cap from first login, however active the user. Default 365 days. */
+  sessionAbsoluteMaxMs: number;
   /** Cookie name for the session token. */
   cookieName: string;
   /** Cookie Secure flag. Only false for http://localhost development. */
@@ -75,6 +81,9 @@ export function resolveConfig(input: MagicLinkConfigInput): MagicLinkConfig {
     linkTtlMs: input.linkTtlMs ?? 15 * MINUTE,
     maxCodeAttempts: input.maxCodeAttempts ?? 5,
     sessionTtlMs: input.sessionTtlMs ?? 30 * DAY,
+    sessionSliding: input.sessionSliding ?? true,
+    sessionRenewAfterMs: input.sessionRenewAfterMs ?? DAY,
+    sessionAbsoluteMaxMs: input.sessionAbsoluteMaxMs ?? 365 * DAY,
     cookieName: input.cookieName ?? 'kaiju_session',
     cookieSecure,
     onboardingPath: input.onboardingPath ?? '/onboarding',

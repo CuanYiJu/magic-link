@@ -138,8 +138,12 @@ export class PgSessionStore implements SessionStore {
     return rows[0] ? sessionFromRow(rows[0]) : null;
   }
 
-  async touch(id: string, lastSeenAt: Date): Promise<void> {
-    await this.sql.query(`update sessions set last_seen_at = $2 where id = $1`, [id, lastSeenAt]);
+  async touch(id: string, lastSeenAt: Date, expiresAt?: Date): Promise<void> {
+    if (expiresAt) {
+      await this.sql.query(`update sessions set last_seen_at = $2, expires_at = $3 where id = $1`, [id, lastSeenAt, expiresAt]);
+    } else {
+      await this.sql.query(`update sessions set last_seen_at = $2 where id = $1`, [id, lastSeenAt]);
+    }
   }
 
   async revoke(id: string, at: Date): Promise<void> {

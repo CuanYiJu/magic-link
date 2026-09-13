@@ -62,6 +62,8 @@ const REQUIREMENTS: Requirement[] = [
   { rule: '登录与验证接口按 IP 限流', source: '计划书 5.6', match: /per-IP limit|rate limited per IP|rate limited request/ },
   { rule: '会话 cookie 30 天，HttpOnly + Secure + SameSite=Lax', source: '计划书 4.2', match: /cookie has the attributes|lasts 30 days|expiry is exactly 30 days|serializeSessionCookie/ },
   { rule: '会话固定防护：登录时吊销旧会话', source: '计划书 5.6', match: /session fixation/ },
+  { rule: '会话滑动续期：活跃用户顺延，一天最多一次，不超过绝对上限', source: '实现选择', match: /sliding|slides on use|absolute cap|absolute max/ },
+  { rule: '邮件发送失败时给用户友好提示、不留悬空 token', source: '实现选择', match: /mailer failure|mail provider failure/ },
   { rule: 'CSRF：SameSite cookie + Origin 校验', source: '计划书 5.6 应用安全', match: /foreign Origin|Referer is accepted/ },
   { rule: '不存明文：token、6 位码、会话只存 HMAC', source: '安全设计', match: /never stored|raw token is not stored|hmac is deterministic/ },
   { rule: '邮件扫描器的 GET 不消耗链接', source: '安全设计', match: /does not consume the link/ },
@@ -111,6 +113,8 @@ const CHECKLIST = [
   ['跨站', '用 curl 带 `Origin: https://evil.test` POST /auth/magic-link，得 403。'],
   ['重定向', '带 `next=https://evil.test` 登录，落在首页而不是外站。'],
   ['邮件观感', '用 Resend 真实发一封到手机：微信通知栏能看到标题里的 6 位码；邮件在深色模式下可读。'],
+  ['微信内会话保持', '在真机（iPhone 与 Android 各一台）的微信里打开活动链接、用 6 位码登录；杀掉微信，第二天再从群里点一个活动链接，应仍是登录状态。微信"清理缓存"后需重新登录属正常。'],
+  ['滑动续期', '登录后把系统时间调后 2 天再访问任一页面，响应里应带新的 Set-Cookie（Max-Age 回到 30 天）；调后 31 天且期间没有访问，应退回未登录。'],
 ];
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);

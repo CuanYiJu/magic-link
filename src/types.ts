@@ -64,7 +64,8 @@ export interface SessionRecord {
 export interface SessionStore {
   create(record: SessionRecord): Promise<void>;
   findByTokenHash(tokenHash: string): Promise<SessionRecord | null>;
-  touch(id: string, lastSeenAt: Date): Promise<void>;
+  /** Record activity; `expiresAt` is passed when the session is being extended (sliding expiry). */
+  touch(id: string, lastSeenAt: Date, expiresAt?: Date): Promise<void>;
   revoke(id: string, at: Date): Promise<void>;
   revokeAllForUser(userId: string, at: Date): Promise<number>;
   purgeExpired(before: Date): Promise<number>;

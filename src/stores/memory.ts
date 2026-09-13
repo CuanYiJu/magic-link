@@ -60,9 +60,11 @@ export class MemorySessionStore implements SessionStore {
     return null;
   }
 
-  async touch(id: string, lastSeenAt: Date): Promise<void> {
+  async touch(id: string, lastSeenAt: Date, expiresAt?: Date): Promise<void> {
     const r = this.records.get(id);
-    if (r) r.lastSeenAt = lastSeenAt;
+    if (!r) return;
+    r.lastSeenAt = lastSeenAt;
+    if (expiresAt) r.expiresAt = expiresAt;
   }
 
   async revoke(id: string, at: Date): Promise<void> {

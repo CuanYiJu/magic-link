@@ -8,7 +8,8 @@
 | 6 位码错误上限 | 5 次，超过后整封邮件（含链接）作废 | §5.6 认证安全 |
 | 同一邮箱限流 | 10 分钟 3 封、每天 10 封 | §4.2（按验证码规则） |
 | 同一 IP 限流 | 发送 10 分钟 10 次；验证 10 分钟 30 次 | §5.6 |
-| 会话 cookie | 30 天，`HttpOnly; Secure; SameSite=Lax; Path=/` | §4.2 |
+| 会话 cookie | 30 天，`HttpOnly; Secure; SameSite=Lax; Path=/`，同时带 `Max-Age` 与 `Expires` | §4.2 |
+| 会话滑动续期 | 30 天按"最后一次活跃"算：有访问就顺延，一天最多续一次并重发 cookie；从首次登录起最长 365 天 | §4.2 的实现选择 |
 | 会话固定防护 | 登录成功时吊销浏览器原有会话、签发新 token | §5.6 |
 | CSRF | SameSite cookie + `Origin`（退化到 `Referer`）校验 | §5.6 |
 | 存储 | 只存 HMAC（链接、6 位码、会话 token 都不落库明文） | — |
@@ -67,7 +68,7 @@ npm run dev
 | `POST /auth/verify` | `{ token, next? }` | `303` 到 `next`（新用户固定到 `/onboarding`），带 `Set-Cookie` | `400 invalid`、`410 expired / used`、`429`、`403 forbidden` |
 | `POST /auth/verify-code` | `{ email, code, next? }` | `200 { status: "ok", redirectTo, isNew }`，带 `Set-Cookie` | 同上，另有 `429 too_many_attempts` |
 | `POST /auth/logout` | — | `204`，清 cookie | `403 bad_origin` |
-| `GET /auth/me` | — | `200 { userId, expiresAt }` | `401` |
+| `GET /auth/me` | — | `200 { userId, expiresAt }`，刚续期时带新的 `Set-Cookie` | `401` |
 
 失败响应都带一句中文 `message`，前端可直接展示或按 `status` 换成自己的文案。
 
@@ -117,6 +118,23 @@ export const POST = handlers.verifyLink;
 import { cookies } from 'next/headers';
 const session = await auth.getSession((await cookies()).get(auth.config.cookieName)?.value);
 ```
+
+**滑动续期需要 middleware 配合**：会话在服务端顺延后，浏览器里 cookie 的 `Max-Age` 还是登录时的值，所以 `getSession` 在刚续期时会带回一个 `setCookie`，把它加到响应头上即可（一天最多一次，其余时候是 `undefined`）。放在 middleware 里最省事，所有页面都覆盖：
+
+```ts
+// middleware.ts
+import { NextResponse } from 'next/server';
+import { handlers } from '@/lib/auth';
+
+export async function middleware(req: Request) {
+  const res = NextResponse.next();
+  const session = await handlers.getSession(req);
+  if (session?.setCookie) res.headers.append('Set-Cookie', session.setCookie);
+  return res;
+}
+```
+
+不想要滑动、坚持"登录后固定 30 天"：`resolveConfig({ ..., sessionSliding: false })`。
 
 建表：把 `migrations/0001_magic_link.sql` 交给 Drizzle 迁移或直接 `psql -f`。`users` 表由应用自己建（§5.3），`PgUserStore` 只用到 `id / email / created_at / last_login_at / status` 五列；列名不同时改 `stores/postgres.ts` 里的 `PgUserStore` 即可。
 

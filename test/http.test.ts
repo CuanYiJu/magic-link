@@ -198,3 +198,27 @@ test('mail provider failure → 503 with a friendly message and Retry-After, no 
   assert.equal(body.message, '登录邮件暂时发不出去，请过几分钟再试。');
   assert.ok(!JSON.stringify(body).includes('Resend'), 'provider error text is not exposed');
 });
+
+test('sliding expiry: /auth/me and getSession re-issue the cookie once a day of activity has passed', async () => {
+  const { handlers, mailer, clock } = make();
+  await handlers.requestLink(post('/auth/magic-link', { email: 'a@b.co' }));
+  const login = await handlers.verifyCode(post('/auth/verify-code', { email: 'a@b.co', code: credentialsFrom(mailer).code }));
+  const cookie = (login.headers.get('Set-Cookie') ?? '').split(';')[0] as string;
+
+  const soon = await handlers.me(new Request(`${ORIGIN}/auth/me`, { headers: { Cookie: cookie } }));
+  assert.equal(soon.headers.get('Set-Cookie'), null, 'no re-issue right after login');
+  assert.deepEqual(await handlers.getSession(new Request(`${ORIGIN}/`, { headers: { Cookie: cookie } })).then((s) => s && 'setCookie' in s), false);
+
+  clock.advance(2 * 24 * 60 * 60_000);
+  const later = await handlers.me(new Request(`${ORIGIN}/auth/me`, { headers: { Cookie: cookie } }));
+  assert.equal(later.status, 200);
+  const reissued = later.headers.get('Set-Cookie') ?? '';
+  assert.ok(reissued.startsWith(cookie + ';'), 'same token, fresh attributes');
+  assert.match(reissued, /Max-Age=2592000; Expires=/);
+  const body = (await later.json()) as { expiresAt: string };
+  assert.equal(Date.parse(body.expiresAt), clock.now().getTime() + 30 * 24 * 60 * 60_000);
+
+  clock.advance(2 * 24 * 60 * 60_000);
+  const viaHelper = await handlers.getSession(new Request(`${ORIGIN}/`, { headers: { Cookie: cookie } }));
+  assert.ok(viaHelper?.setCookie?.startsWith(cookie + ';'));
+});

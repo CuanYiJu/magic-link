@@ -202,7 +202,7 @@ test('session fixation: the pre-login session is revoked on login', async () => 
   assert.equal(sessions.records.size, 2);
 });
 
-test('session lasts 30 days and logout revokes it', async () => {
+test('session lasts 30 days of inactivity, slides on use, and logout revokes it', async () => {
   const { service, mailer, clock } = makeService();
   await service.requestLink({ email: 'a@b.co' });
   const login = await service.verifyLink(credentialsFrom(mailer).token);
@@ -210,9 +210,13 @@ test('session lasts 30 days and logout revokes it', async () => {
   if (login.status !== 'ok') return;
 
   clock.advance(29 * 24 * 60 * MIN);
-  assert.ok(await service.getSession(login.sessionToken));
-  clock.advance(2 * 24 * 60 * MIN);
-  assert.equal(await service.getSession(login.sessionToken), null);
+  const active = await service.getSession(login.sessionToken);
+  assert.ok(active);
+  assert.ok(active.setCookie, 'a visit after a day re-issues the cookie');
+  clock.advance(29 * 24 * 60 * MIN);
+  assert.ok(await service.getSession(login.sessionToken), 'extended by the earlier visit');
+  clock.advance(31 * 24 * 60 * MIN);
+  assert.equal(await service.getSession(login.sessionToken), null, '30 idle days end it');
 
   await service.requestLink({ email: 'a@b.co' });
   const again = await service.verifyLink(credentialsFrom(mailer).token);
@@ -232,7 +236,21 @@ test('session cookie has the attributes from plan §4.2', async () => {
   const login = await service.verifyLink(credentialsFrom(mailer).token);
   assert.equal(login.status, 'ok');
   if (login.status !== 'ok') return;
-  assert.match(login.cookie, /^kaiju_session=[A-Za-z0-9_-]+; Path=\/; Max-Age=2592000; HttpOnly; SameSite=Lax; Secure$/);
+  assert.match(login.cookie, /^kaiju_session=[A-Za-z0-9_-]+; Path=\/; Max-Age=2592000; Expires=Mon, 12 Oct 2026 12:00:00 GMT; HttpOnly; SameSite=Lax; Secure$/);
+});
+
+test('sliding expiry can be turned off: then the session ends 30 days after login regardless of use', async () => {
+  const { service, mailer, clock } = makeService({ sessionSliding: false });
+  await service.requestLink({ email: 'a@b.co' });
+  const login = await service.verifyLink(credentialsFrom(mailer).token);
+  assert.equal(login.status, 'ok');
+  if (login.status !== 'ok') return;
+  clock.advance(29 * 24 * 60 * MIN);
+  const active = await service.getSession(login.sessionToken);
+  assert.ok(active);
+  assert.equal(active.setCookie, undefined);
+  clock.advance(2 * 24 * 60 * MIN);
+  assert.equal(await service.getSession(login.sessionToken), null);
 });
 
 test('banned users cannot log in', async () => {

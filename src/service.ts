@@ -194,9 +194,23 @@ export class MagicLinkService {
     return this.completeLogin(record, ctx);
   }
 
-  /** Resolve a cookie token to the logged-in user id, or null. */
-  async getSession(sessionToken: string | null | undefined): Promise<{ userId: string; session: SessionRecord } | null> {
-    return this.sessions.resolve(sessionToken);
+  /**
+   * Resolve a cookie token to the logged-in user, or null. When the session
+   * was just extended (sliding expiry), `setCookie` holds a fresh Set-Cookie
+   * value the caller should add to its response so the browser's copy is
+   * extended too; it is undefined otherwise.
+   */
+  async getSession(
+    sessionToken: string | null | undefined,
+  ): Promise<{ userId: string; session: SessionRecord; setCookie?: string } | null> {
+    const active = await this.sessions.resolve(sessionToken);
+    if (!active) return null;
+    const result: { userId: string; session: SessionRecord; setCookie?: string } = {
+      userId: active.userId,
+      session: active.session,
+    };
+    if (active.renewed && sessionToken) result.setCookie = this.sessions.cookie(sessionToken, active.session.expiresAt);
+    return result;
   }
 
   /** Revoke the presented session. Always succeeds; returns the cookie that clears it. */
@@ -249,7 +263,7 @@ export class MagicLinkService {
     const { token: sessionToken, session } = await this.sessions.create(user.id, ctx);
     await this.deps.users.recordLogin(user.id, now);
 
-    return { status: 'ok', user, sessionToken, session, cookie: this.sessions.cookie(sessionToken) };
+    return { status: 'ok', user, sessionToken, session, cookie: this.sessions.cookie(sessionToken, session.expiresAt) };
   }
 }
 
