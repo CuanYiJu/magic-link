@@ -136,7 +136,9 @@ const session = await auth.getSession((await cookies()).get(auth.config.cookieNa
 
 登录邮件要进收件箱，收件方（Gmail、Outlook、QQ）看的是三条 DNS 记录：SPF（哪些服务器可以替这个域名发信）、DKIM（邮件签名的公钥）、DMARC（前两条不通过时怎么处理）。用 Resend 时它会把要加的记录列出来；自建时要自己生成 DKIM 密钥并配置。三条都没有，邮件基本进垃圾箱或被拒收（计划书 6.4 上线清单里的 SPF / DKIM / DMARC 就是这一步）。
 
-**路线 A：Resend（推荐，免费额度每月 3,000 封）**
+**路线 A：Resend（推荐，免费额度每天 100 封、每月 3,000 封）**
+
+免费档的硬限制是**每天 100 封**（另有每月 3,000 封、3 个域名、日志保留 30 天、API 每秒 10 次）。每次登录请求就是一封邮件；会话 30 天，老用户大约一个月才登录一次，按基准情景的用户量平时远用不到，但一场被小红书带火的局可能一个下午带来 100+ 个新注册，超出后 Resend 直接拒收，用户在登录页看到的是报错。上线周与推广的活动日盯着 resend.com/settings/usage；接近 100 就升 Pro（$20/月，50,000 封，不再有日限）。
 
 1. 到 resend.com 注册，Domains 里添加域名（例如 `kaiju.example`），按它给的 DKIM / SPF / DMARC 记录到域名注册商处逐条添加，等状态变为 Verified。
 2. API Keys 里建一把有发送权限的 key。
