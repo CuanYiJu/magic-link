@@ -222,3 +222,24 @@ test('sliding expiry: /auth/me and getSession re-issue the cookie once a day of 
   const viaHelper = await handlers.getSession(new Request(`${ORIGIN}/`, { headers: { Cookie: cookie } }));
   assert.ok(viaHelper?.setCookie?.startsWith(cookie + ';'));
 });
+
+test('GET /auth/verify must not use Referrer-Policy no-referrer (it nulls the Origin header on the form POST)', async () => {
+  // Regression guard: with `no-referrer`, Chromium sends `Origin: null` on the
+  // page's self-submitted POST, originOk() rejects it, and link login breaks in
+  // every real browser while these tests (which set Origin by hand) stay green.
+  const { handlers, mailer } = make();
+  await handlers.requestLink(post('/auth/magic-link', { email: 'a@b.co' }));
+  const res = await handlers.verifyPage(new Request(credentialsFrom(mailer).link));
+  const policy = res.headers.get('Referrer-Policy');
+  assert.equal(policy, 'origin');
+  assert.notEqual(policy, 'no-referrer');
+  // And the page itself must not override it with a meta tag either.
+  assert.ok(!(await res.text()).includes('name="referrer"'));
+});
+
+test('an Origin: null POST (what a no-referrer page would send) is rejected, which is why the policy matters', async () => {
+  const { handlers, mailer } = make();
+  await handlers.requestLink(post('/auth/magic-link', { email: 'a@b.co' }));
+  const res = await handlers.verifyLink(postForm('/auth/verify', { token: credentialsFrom(mailer).token }, { Origin: 'null' }));
+  assert.equal(res.status, 403);
+});

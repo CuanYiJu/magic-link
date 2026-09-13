@@ -86,18 +86,18 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
     <h1>无密码登录：全部通过</h1>
     <p>下面第一张表把计划书 4.2 / 5.6 的每条规则对应到证明它的测试；第二部分是每个测试文件的逐条结果；最后是需要人手动走一遍的验收清单。</p>
     <div class="meta">
-      <span>生成时间 2026/9/13 00:21:37（多伦多）</span>
-      <span>提交 <span class="mono">cbc45d0</span></span>
+      <span>生成时间 2026/9/13 00:22:54（多伦多）</span>
+      <span>提交 <span class="mono">9f11291</span></span>
       <span>Node v24.19.0</span>
       <span>运行方式 <span class="mono">npm run test:report</span></span>
     </div>
   </header>
 
   <div class="figures" role="group" aria-label="汇总">
-    <div class="figure"><span class="n">77</span><span class="l">测试用例</span></div>
-    <div class="figure"><span class="n ok">77</span><span class="l">通过</span></div>
+    <div class="figure"><span class="n">79</span><span class="l">测试用例</span></div>
+    <div class="figure"><span class="n ok">79</span><span class="l">通过</span></div>
     <div class="figure"><span class="n ">0</span><span class="l">失败</span></div>
-    <div class="figure"><span class="n">105<span class="small muted"> ms</span></span><span class="l">用例总耗时</span></div>
+    <div class="figure"><span class="n">101<span class="small muted"> ms</span></span><span class="l">用例总耗时</span></div>
   </div>
 
   <section>
@@ -251,25 +251,25 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">randomToken: 256 bits, base64url, unique</span>
-  <span class="dur mono">2.9 ms</span>
+  <span class="dur mono">3.1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">randomCode: always exactly six digits, including leading zeros</span>
-  <span class="dur mono">4.7 ms</span>
+  <span class="dur mono">4.2 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">newId is a v4 UUID</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.4 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">hmac is deterministic, keyed, and domain-separated by purpose</span>
-  <span class="dur mono">1.1 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
@@ -296,7 +296,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">subject carries the app name and the code (visible in WeChat notifications)</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li>
 <li class="case ok">
@@ -313,17 +313,17 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 </li></ul>
 </details>
 <details open>
-  <summary><span class="file mono">http.test.ts</span><span class="file-label">HTTP 处理器 http.ts</span><span class="count ">15/15</span></summary>
+  <summary><span class="file mono">http.test.ts</span><span class="file-label">HTTP 处理器 http.ts</span><span class="count ">17/17</span></summary>
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/magic-link accepts JSON and returns 202 with the normalised email</span>
-  <span class="dur mono">26 ms</span>
+  <span class="dur mono">24 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/magic-link: invalid email → 400, foreign Origin → 403, GET → 405</span>
-  <span class="dur mono">1.5 ms</span>
+  <span class="dur mono">2.7 ms</span>
   
 </li>
 <li class="case ok">
@@ -335,19 +335,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">rate limited request → 429 with Retry-After</span>
-  <span class="dur mono">2.7 ms</span>
+  <span class="dur mono">1.8 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">client IP comes from X-Forwarded-For when trustProxy is on</span>
-  <span class="dur mono">1.0 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">GET /auth/verify renders a self-submitting form and does not consume the link</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono">1.3 ms</span>
   
 </li>
 <li class="case ok">
@@ -359,7 +359,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/verify (form) logs in, sets the cookie and redirects to a safe next</span>
-  <span class="dur mono">6.3 ms</span>
+  <span class="dur mono">5.0 ms</span>
   
 </li>
 <li class="case ok">
@@ -371,19 +371,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/verify-code logs in with JSON and returns redirectTo</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono">1.2 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">too many wrong codes → 429</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono">1.1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">POST /auth/logout clears the cookie and kills the session</span>
-  <span class="dur mono">1.8 ms</span>
+  <span class="dur mono">1.5 ms</span>
   
 </li>
 <li class="case ok">
@@ -401,7 +401,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">sliding expiry: /auth/me and getSession re-issue the cookie once a day of activity has passed</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono">1.4 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">GET /auth/verify must not use Referrer-Policy no-referrer (it nulls the Origin header on the form POST)</span>
+  <span class="dur mono"><1 ms</span>
+  
+</li>
+<li class="case ok">
+  <span class="mark" aria-label="通过">✓</span>
+  <span class="name">an Origin: null POST (what a no-referrer page would send) is rejected, which is why the policy matters</span>
+  <span class="dur mono"><1 ms</span>
   
 </li></ul>
 </details>
@@ -410,7 +422,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">PgTokenStore.consume only succeeds when consumed_at is still null</span>
-  <span class="dur mono">1.5 ms</span>
+  <span class="dur mono">2.1 ms</span>
   
 </li>
 <li class="case ok">
@@ -449,7 +461,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">allows up to max hits in the window, then blocks with retryAfterMs</span>
-  <span class="dur mono">2.8 ms</span>
+  <span class="dur mono">2.2 ms</span>
   
 </li>
 <li class="case ok">
@@ -479,7 +491,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">unlimited never blocks</span>
-  <span class="dur mono">2.3 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li></ul>
 </details>
@@ -488,7 +500,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">requestLink sends one email carrying a link and a 6-digit code</span>
-  <span class="dur mono">5.0 ms</span>
+  <span class="dur mono">5.8 ms</span>
   
 </li>
 <li class="case ok">
@@ -500,7 +512,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">raw token and code are never stored, only keyed hashes</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono">1.5 ms</span>
   
 </li>
 <li class="case ok">
@@ -512,19 +524,19 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">code logs in and burns the link from the same email</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">link burns the code from the same email</span>
-  <span class="dur mono">1.6 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">second login for the same email reuses the user and is not new</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
@@ -566,25 +578,25 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">per-email daily cap: 10 per day</span>
-  <span class="dur mono">1.2 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">per-IP limit applies across different emails</span>
-  <span class="dur mono">1.0 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">verification attempts are rate limited per IP</span>
-  <span class="dur mono">1.7 ms</span>
+  <span class="dur mono">1.8 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">session fixation: the pre-login session is revoked on login</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.5 ms</span>
   
 </li>
 <li class="case ok">
@@ -647,7 +659,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
   <ul class="cases"><li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">serializeSessionCookie emits the plan §4.2 attributes, Max-Age and Expires, and encodes the value</span>
-  <span class="dur mono">2.9 ms</span>
+  <span class="dur mono">1.9 ms</span>
   
 </li>
 <li class="case ok">
@@ -659,7 +671,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: create → resolve → revoke</span>
-  <span class="dur mono">1.4 ms</span>
+  <span class="dur mono">1.8 ms</span>
   
 </li>
 <li class="case ok">
@@ -677,13 +689,13 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: sliding expiry renews at most once a day and moves expiresAt forward</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.1 ms</span>
   
 </li>
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: a user active every week stays logged in past 30 days, but not past the absolute cap</span>
-  <span class="dur mono"><1 ms</span>
+  <span class="dur mono">1.1 ms</span>
   
 </li>
 <li class="case ok">
@@ -701,7 +713,7 @@ footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line)
 <li class="case ok">
   <span class="mark" aria-label="通过">✓</span>
   <span class="name">SessionService: revokeAllForUser only touches that user</span>
-  <span class="dur mono">1.3 ms</span>
+  <span class="dur mono"><1 ms</span>
   
 </li></ul>
 </details>

@@ -209,13 +209,24 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
   });
 }
 
+/**
+ * Referrer-Policy is `origin`, not `no-referrer`, on purpose. The verify
+ * page's URL carries the login token, so the Referer must not leak it; but
+ * per the Fetch spec a `no-referrer` policy also makes browsers send
+ * `Origin: null` on the page's own form POST, which the Origin check then
+ * rejects and link login never completes. `origin` keeps the token out of
+ * the Referer (only the scheme + host is sent) while leaving the Origin
+ * header intact. Found in a real browser; unit tests set Origin by hand.
+ */
+const VERIFY_PAGE_REFERRER_POLICY = 'origin';
+
 function html(body: string, status: number): Response {
   return new Response(body, {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
-      'Referrer-Policy': 'no-referrer',
+      'Referrer-Policy': VERIFY_PAGE_REFERRER_POLICY,
       'X-Robots-Tag': 'noindex',
     },
   });
