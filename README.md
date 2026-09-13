@@ -176,7 +176,28 @@ SMTP_PASS=<账号密码>
 
 同一台内网里、靠 IP 白名单免认证的中继：`SMTP_PORT=25`，`SMTP_USER` / `SMTP_PASS` 留空。自签证书的服务器加 `SMTP_REJECT_UNAUTHORIZED=false`，仅限自己控制的主机。
 
-**两条路线共同的变量**
+**路线 C：Cloudflare Email Service（不免费，Workers Paid $5/月）**
+
+Cloudflare 2026 年起有了自己的发信服务（Email Sending，公测中），但**免费计划只能发给你账号里验证过的目标地址**（也就是你自己），给任意用户发需要 Workers Paid 计划：每月 $5，含 3,000 封，超出 $0.35 / 千封。域名已经在 Cloudflare 托管、又愿意付这 $5 的话，它的好处是 DNS 记录一键写入、DKIM 自动签名、日志在同一个后台。Resend 免费档同样是每月 3,000 封，所以只为发信不必为此付费。
+
+它提供 SMTP 入口，用本包的 `SmtpMailer` 就能接，不用改代码：
+
+1. Cloudflare 后台 Email Service → Email Sending 里 onboard 域名（记录会自动加进 Cloudflare DNS）。
+2. 建一个 API token，权限 **Email Sending: Edit**。这个 token 就是 SMTP 密码，能用它从账号下任何域名发信，按密钥对待。
+
+```
+EMAIL_FROM=开局 <login@kaiju.example>
+SMTP_HOST=smtp.mx.cloudflare.net
+SMTP_PORT=465
+SMTP_USER=api_token
+SMTP_PASS=<Cloudflare API token>
+```
+
+只支持 465 隐式 TLS，不支持 587 STARTTLS；`SMTP_USER` 必须是字面量 `api_token`。`535` 是 token 权限或用户名不对，`550 Sender denied` 是发件域名没有 onboard。
+
+另外两个容易混淆的 Cloudflare 免费功能与发信无关：Email Routing 是**收信**转发（免费、不限量）；Cloudflare DNS 免费托管域名，任何路线都可以用它来放 SPF / DKIM / DMARC 记录。
+
+**三条路线共同的变量**
 
 生成密钥：
 
