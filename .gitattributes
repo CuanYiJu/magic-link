@@ -1,0 +1,5 @@
+# 文本文件统一 LF，与上层 kaiju 仓库一致
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

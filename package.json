@@ -1,0 +1,26 @@
+{
+  "name": "@kaiju/magic-link",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Passwordless email login for 开局 (Kaiju): magic link + 6-digit code, sessions, rate limiting.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "dev": "node scripts/dev-server.ts",
+    "check": "npm run typecheck && npm test"
+  },
+  "dependencies": {
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "~6.0.3"
+  }
+}
