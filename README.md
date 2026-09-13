@@ -146,7 +146,7 @@ export async function middleware(req: Request) {
 
 ## 配置真实发信
 
-代码里发信只依赖一个 `Mailer` 接口（一个 `send` 方法）。带了两种实现：`ResendMailer`（Resend 的 REST API）和 `SmtpMailer`（任何 SMTP 服务器，自建或托管商的 SMTP 入口都行）。演示服务器按环境变量选择：有 `RESEND_API_KEY` 走 Resend，否则有 `SMTP_HOST` 走 SMTP，都没有就打印到终端。
+代码里发信只依赖一个 `Mailer` 接口（一个 `send` 方法）。带了两种实现：`ResendMailer`（Resend 的 REST API）和 `SmtpMailer`（任何 SMTP 服务器，自建或托管商的 SMTP 入口都行）。演示服务器按环境变量选择：有 `RESEND_API_KEY` 走 Resend，否则有 `SMTP_HOST` 走 SMTP，都没有就打印到终端；两套都配着的话用 `MAIL_PROVIDER=resend|smtp|console` 指定用哪个，启动时终端会打印选中的提供商。
 
 不管走哪条路，都要先做同一件事：**发信域名的 DNS**。
 

@@ -8,6 +8,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { Readable } from 'node:stream';
 import {
   ConsoleMailer,
+  type Mailer,
   MagicLinkService,
   MemoryRateLimiter,
   MemorySessionStore,
@@ -32,12 +33,32 @@ const service = new MagicLinkService({
   tokens: new MemoryTokenStore(),
   sessions: new MemorySessionStore(),
   users: new MemoryUserStore(),
-  mailer: process.env.RESEND_API_KEY
-    ? new ResendMailer({ apiKey: process.env.RESEND_API_KEY })
-    : (SmtpMailer.fromEnv() ?? new ConsoleMailer()),
+  mailer: pickMailer(),
   rateLimiter: new MemoryRateLimiter(),
 });
 const handlers = createHandlers(service, { trustProxy: false });
+
+/**
+ * MAIL_PROVIDER=resend | smtp | console forces one provider. Unset: Resend
+ * when RESEND_API_KEY exists, else SMTP when SMTP_HOST exists, else console.
+ * Lets both providers stay configured in .env and be switched with one line.
+ */
+function pickMailer(): Mailer {
+  const choice = (process.env.MAIL_PROVIDER ?? '').toLowerCase();
+  const resend = process.env.RESEND_API_KEY ? new ResendMailer({ apiKey: process.env.RESEND_API_KEY }) : null;
+  const smtp = SmtpMailer.fromEnv();
+  const named: Record<string, Mailer | null> = { resend, smtp, console: new ConsoleMailer() };
+  if (choice) {
+    const picked = named[choice];
+    if (picked === undefined) throw new Error(`MAIL_PROVIDER must be resend, smtp or console (got "${choice}")`);
+    if (picked === null) throw new Error(`MAIL_PROVIDER=${choice} but its variables are not set (${choice === 'resend' ? 'RESEND_API_KEY' : 'SMTP_HOST'})`);
+    console.log(`mail provider: ${choice} (MAIL_PROVIDER)`);
+    return picked;
+  }
+  const auto = resend ? 'resend' : smtp ? 'smtp' : 'console';
+  console.log(`mail provider: ${auto} (auto; set MAIL_PROVIDER to override)`);
+  return resend ?? smtp ?? new ConsoleMailer();
+}
 
 const routes: Record<string, (req: Request) => Promise<Response>> = {
   'POST /auth/magic-link': handlers.requestLink,
