@@ -62,7 +62,7 @@ npm run dev
 
 | 方法 · 路径 | 请求 | 成功 | 失败 |
 |---|---|---|---|
-| `POST /auth/magic-link` | `{ email }` | `202 { status: "sent", email }`（邮箱不存在也返回 202，防枚举） | `400 invalid_email`、`429 rate_limited`（带 `Retry-After`）、`403 bad_origin` |
+| `POST /auth/magic-link` | `{ email }` | `202 { status: "sent", email }`（邮箱不存在也返回 202，防枚举） | `400 invalid_email`、`429 rate_limited`（带 `Retry-After`）、`403 bad_origin`、`503 send_failed`（邮件服务商拒收或故障，如 Resend 日限用完；带 `Retry-After: 120`，原因只写进服务器日志） |
 | `GET /auth/verify?token=…&next=…` | — | `200` HTML：自动提交的表单，把 token 以 POST 送回 | `400` |
 | `POST /auth/verify` | `{ token, next? }` | `303` 到 `next`（新用户固定到 `/onboarding`），带 `Set-Cookie` | `400 invalid`、`410 expired / used`、`429`、`403 forbidden` |
 | `POST /auth/verify-code` | `{ email, code, next? }` | `200 { status: "ok", redirectTo, isNew }`，带 `Set-Cookie` | 同上，另有 `429 too_many_attempts` |
@@ -138,7 +138,7 @@ const session = await auth.getSession((await cookies()).get(auth.config.cookieNa
 
 **路线 A：Resend（推荐，免费额度每天 100 封、每月 3,000 封）**
 
-免费档的硬限制是**每天 100 封**（另有每月 3,000 封、3 个域名、日志保留 30 天、API 每秒 10 次）。每次登录请求就是一封邮件；会话 30 天，老用户大约一个月才登录一次，按基准情景的用户量平时远用不到，但一场被小红书带火的局可能一个下午带来 100+ 个新注册，超出后 Resend 直接拒收，用户在登录页看到的是报错。上线周与推广的活动日盯着 resend.com/settings/usage；接近 100 就升 Pro（$20/月，50,000 封，不再有日限）。
+免费档的硬限制是**每天 100 封**（另有每月 3,000 封、3 个域名、日志保留 30 天、API 每秒 10 次）。每次登录请求就是一封邮件；会话 30 天，老用户大约一个月才登录一次，按基准情景的用户量平时远用不到，但一场被小红书带火的局可能一个下午带来 100+ 个新注册，超出后 Resend 直接拒收，接口返回 `503 send_failed`，用户看到"登录邮件暂时发不出去，请过几分钟再试"，服务器日志里有 Resend 的原文。上线周与推广的活动日盯着 resend.com/settings/usage；接近 100 就升 Pro（$20/月，50,000 封，不再有日限）。
 
 1. 到 resend.com 注册，Domains 里添加域名（例如 `kaiju.example`），按它给的 DKIM / SPF / DMARC 记录到域名注册商处逐条添加，等状态变为 Verified。
 2. API Keys 里建一把有发送权限的 key。

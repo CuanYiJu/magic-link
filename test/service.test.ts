@@ -286,3 +286,29 @@ test('config guards: short secret, non-https base URL, insecure cookie off local
   const local = makeService({ baseUrl: 'http://localhost:3000' });
   assert.equal(local.config.cookieSecure, false);
 });
+
+test('mailer failure: send_failed, nothing left pending, cause logged, next attempt works', async () => {
+  const { service, mailer, tokens } = makeService();
+  const logged: unknown[] = [];
+  const flaky = Object.assign(service as unknown as { deps: { mailer: unknown; logger: unknown } });
+  // Reach into deps for this test only: swap the mailer for one that fails once.
+  const original = flaky.deps.mailer;
+  let calls = 0;
+  flaky.deps.mailer = { send: async () => { calls++; throw new Error('Resend: 429 Too Many Requests daily quota exceeded'); } };
+  flaky.deps.logger = { error: (m: string, meta: unknown) => logged.push([m, meta]) };
+
+  const result = await service.requestLink({ email: 'a@b.co' });
+  assert.equal(calls, 1);
+  assert.deepEqual(result, { status: 'send_failed', reason: 'Resend: 429 Too Many Requests daily quota exceeded' });
+  assert.equal(logged.length, 1);
+  assert.match(String((logged[0] as unknown[])[0]), /failed to send/);
+  // The record exists but is burned, so the (unsent) link and code can never log in.
+  assert.equal(tokens.records.size, 1);
+  assert.ok([...tokens.records.values()][0]?.consumedAt);
+  assert.deepEqual(await service.verifyCode('a@b.co', '000000'), { status: 'invalid' });
+
+  flaky.deps.mailer = original;
+  const again = await service.requestLink({ email: 'a@b.co' });
+  assert.equal(again.status, 'sent');
+  assert.equal((await service.verifyLink(credentialsFrom(mailer).token)).status, 'ok');
+});

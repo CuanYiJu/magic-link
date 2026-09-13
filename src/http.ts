@@ -26,7 +26,7 @@ export interface HttpOptions {
 }
 
 export interface MagicLinkHandlers {
-  /** POST { email } → 202 { status: "sent" } (also for unknown addresses). */
+  /** POST { email } → 202 { status: "sent" } (also for unknown addresses); 503 when the mail provider fails. */
   requestLink(req: Request): Promise<Response>;
   /** GET ?token=…&next=… → HTML page that POSTs the token (so mail scanners cannot consume it). */
   verifyPage(req: Request): Promise<Response>;
@@ -134,6 +134,11 @@ export function createHandlers(service: MagicLinkService, options: HttpOptions):
         case 'rate_limited':
           return json({ status: 'rate_limited', message: MESSAGES.rate_limited }, 429, {
             'Retry-After': String(Math.ceil(result.retryAfterMs / 1000)),
+          });
+        case 'send_failed':
+          // The reason stays in the server log; the user only needs to know it is not their fault.
+          return json({ status: 'send_failed', message: '登录邮件暂时发不出去，请过几分钟再试。' }, 503, {
+            'Retry-After': '120',
           });
       }
     },

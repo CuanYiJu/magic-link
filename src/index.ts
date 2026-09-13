@@ -1,5 +1,6 @@
 export { MagicLinkService, safeRelativePath } from './service.ts';
 export type {
+  Logger,
   LoginResult,
   LoginSuccess,
   MagicLinkDeps,

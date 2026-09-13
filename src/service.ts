@@ -25,7 +25,13 @@ export type RequestLinkResult =
   /** Email accepted. Sent whether or not the address is known, to avoid account enumeration. */
   | { status: 'sent'; email: string }
   | { status: 'invalid_email' }
-  | { status: 'rate_limited'; retryAfterMs: number };
+  | { status: 'rate_limited'; retryAfterMs: number }
+  /** The mail provider rejected or failed the send (quota, outage, bad config). Nothing is pending. */
+  | { status: 'send_failed'; reason: string };
+
+export interface Logger {
+  error(message: string, meta?: Record<string, unknown>): void;
+}
 
 export interface LoginSuccess {
   status: 'ok';
@@ -55,6 +61,8 @@ export interface MagicLinkDeps {
   mailer: Mailer;
   rateLimiter: RateLimiter;
   clock?: Clock;
+  /** Receives mailer failures so an operator notices a quota or outage. Default: console.error. */
+  logger?: Logger;
 }
 
 const emailSchema = z.string().trim().min(3).max(254).email();
@@ -133,7 +141,16 @@ export class MagicLinkService {
       code,
       ttlMinutes: Math.round(this.deps.config.linkTtlMs / 60_000),
     });
-    await this.deps.mailer.send(message);
+    try {
+      await this.deps.mailer.send(message);
+    } catch (err) {
+      // No email reached the user, so nothing must stay pending: burn the record
+      // and let the caller tell the user to try again later.
+      await this.deps.tokens.consume(record.id, this.clock.now());
+      const reason = err instanceof Error ? err.message : String(err);
+      (this.deps.logger ?? console).error('magic-link: login email failed to send', { email, reason });
+      return { status: 'send_failed', reason };
+    }
     return { status: 'sent', email };
   }
 

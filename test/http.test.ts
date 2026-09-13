@@ -184,3 +184,17 @@ test('GET /auth/me without a cookie → 401', async () => {
   const { handlers } = make();
   assert.equal((await handlers.me(new Request(`${ORIGIN}/auth/me`))).status, 401);
 });
+
+test('mail provider failure → 503 with a friendly message and Retry-After, no detail leaked', async () => {
+  const { handlers, service } = make();
+  const svc = service as unknown as { deps: { mailer: unknown; logger: unknown } };
+  svc.deps.mailer = { send: async () => { throw new Error('ResendMailer: 429 Too Many Requests {"message":"quota"}'); } };
+  svc.deps.logger = { error: () => {} };
+  const res = await handlers.requestLink(post('/auth/magic-link', { email: 'a@b.co' }));
+  assert.equal(res.status, 503);
+  assert.equal(res.headers.get('Retry-After'), '120');
+  const body = (await res.json()) as { status: string; message: string };
+  assert.equal(body.status, 'send_failed');
+  assert.equal(body.message, '登录邮件暂时发不出去，请过几分钟再试。');
+  assert.ok(!JSON.stringify(body).includes('Resend'), 'provider error text is not exposed');
+});
