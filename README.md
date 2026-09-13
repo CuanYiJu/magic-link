@@ -30,7 +30,7 @@ magic-link/
 │   ├── stores/postgres.ts Postgres 存储（pg / Drizzle 的 $client 直接可用）
 │   ├── mailers/console.ts 打印到终端 / 捕获到内存
 │   ├── mailers/resend.ts  Resend REST API
-│   ├── mailers/smtp.ts    任何 SMTP 服务器（自建或托管商入口，nodemailer）
+│   ├── mailers/smtp.ts    任何 SMTP 服务器（自建或托管商入口，nodemailer；仅 Node，走 `./smtp` 子路径）
 │   └── index.ts          公共导出
 ├── migrations/0001_magic_link.sql   auth_tokens、sessions 两张表
 ├── scripts/dev-server.ts            本地演示服务器（node:http）
@@ -75,6 +75,48 @@ npm run dev
 **为什么 GET 不直接登录**：邮件服务商和企业安全网关会先替用户 GET 一遍链接。若 GET 就消耗 token，用户点开时链接已失效。所以 GET 只渲染一个自动提交的表单，真正消耗发生在 POST。
 
 **`next` 只接受站内路径**：`/e/abc?x=1` 可以；`https://…`、`//host`、带反斜杠或换行的都会被换成默认路径，防开放重定向。
+
+## 在 Node 与 Cloudflare Workers 上都能跑
+
+主入口 `src/index.ts` 可达的代码只用 Web 标准 API：`crypto.subtle` 做 HMAC、`crypto.getRandomValues` 出随机数、Fetch API 的 `Request` / `Response`，没有 `node:*`、`Buffer`、`process`。`test/workers-compat.test.ts` 静态扫描整个依赖图，任何人往主入口加回 Node 专有 API 都会让测试失败。HMAC 的字节输入和早先 node:crypto 版本完全一致，数据库里已有的 token / 会话哈希不用迁移。
+
+在 Workers 上的差别只有三处：
+
+| 部件 | Node | Workers |
+|---|---|---|
+| 配置 | `configFromEnv()` 读 `process.env` | `configFromEnv(env)`，把 Worker 的 `env` 绑定传进去 |
+| 邮件 | `ResendMailer` 或 `SmtpMailer` | 只有 `ResendMailer`（走 fetch）。`SmtpMailer` 依赖 nodemailer，放在 `@kaiju/magic-link/smtp` 子路径（相对路径 `magic-link/src/mailers/smtp.ts`），不要在 Worker 里 import |
+| 存储 | `Pg*Store` + `pg` | `Pg*Store` + 任何实现 `SqlClient` 的适配器：D1 只需把 `$1` 换成 `?1`（`site/backend` 里已有一个），或用 Hyperdrive 连 Postgres |
+
+`MemoryRateLimiter` 在 Workers 上是"每个隔离实例各记各的"，多个数据中心之间不共享，只能防手滑不能防攻击；正式环境用 KV、Durable Object 或数据库实现 `RateLimiter`（一个方法）。
+
+Worker 里的最小接法：
+
+```ts
+import { MagicLinkService, MemoryRateLimiter, PgSessionStore, PgTokenStore, PgUserStore, ResendMailer, configFromEnv, createHandlers } from '../magic-link/src/index.ts';
+
+export default {
+  async fetch(request: Request, env: Env) {
+    const sql = d1Adapter(env.DB); // $n → ?n，返回 { rows }
+    const auth = new MagicLinkService({
+      config: configFromEnv(env),
+      tokens: new PgTokenStore(sql),
+      sessions: new PgSessionStore(sql),
+      users: new PgUserStore(sql),
+      mailer: new ResendMailer({ apiKey: env.RESEND_API_KEY }),
+      rateLimiter: new MemoryRateLimiter(),
+    });
+    const h = createHandlers(auth, { trustProxy: true });
+    const { pathname } = new URL(request.url);
+    if (pathname === '/auth/magic-link') return h.requestLink(request);
+    if (pathname === '/auth/verify') return request.method === 'GET' ? h.verifyPage(request) : h.verifyLink(request);
+    // …verify-code, logout, me
+    return new Response('not found', { status: 404 });
+  },
+};
+```
+
+一个 Workers 特有的坑已经修掉并有回归测试：`ResendMailer` 早先把全局 `fetch` 存进实例属性再调用，Workers 会报 `Illegal invocation: function called with incorrect this reference`（Node 不报）。现在每次调用都直接用全局 `fetch`。
 
 ## 接进 Next.js（App Router）
 
@@ -267,7 +309,7 @@ node --env-file=.env scripts/dev-server.ts
 
 **正式环境（Next.js / Vercel）**
 
-配置用 `configFromEnv()`，邮件用 `new ResendMailer({ apiKey: process.env.RESEND_API_KEY! })` 或 `SmtpMailer.fromEnv()!`（见上面的接入示例）。Vercel 上把变量填进项目的 Environment Variables，不要提交 `.env`；密钥、key、SMTP 密码都不进 git。注意 Serverless 环境每次冷启动都会新建 SMTP 连接，对自建服务器意味着更多握手，量大时 Resend 这类 API 更省。
+配置用 `configFromEnv()`，邮件用 `new ResendMailer({ apiKey: process.env.RESEND_API_KEY! })` 或 `SmtpMailer.fromEnv()!`（`SmtpMailer` 从 `magic-link/src/mailers/smtp.ts` 引入，不在主入口里；见上面的接入示例）。Vercel 上把变量填进项目的 Environment Variables，不要提交 `.env`；密钥、key、SMTP 密码都不进 git。注意 Serverless 环境每次冷启动都会新建 SMTP 连接，对自建服务器意味着更多握手，量大时 Resend 这类 API 更省。
 
 **发信通了之后的检查**
 

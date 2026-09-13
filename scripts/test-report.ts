@@ -64,6 +64,7 @@ const REQUIREMENTS: Requirement[] = [
   { rule: '会话固定防护：登录时吊销旧会话', source: '计划书 5.6', match: /session fixation/ },
   { rule: '会话滑动续期：活跃用户顺延，一天最多一次，不超过绝对上限', source: '实现选择', match: /sliding|slides on use|absolute cap|absolute max/ },
   { rule: '邮件发送失败时给用户友好提示、不留悬空 token', source: '实现选择', match: /mailer failure|mail provider failure/ },
+  { rule: 'Node 与 Cloudflare Workers 都能跑：主入口无 node: 依赖、只用 Web Crypto、fetch 不缓存', source: '实现选择', match: /Illegal invocation|replaced after construction|main entry|Web Crypto|node:crypto/ },
   { rule: 'CSRF：SameSite cookie + Origin 校验', source: '计划书 5.6 应用安全', match: /foreign Origin|Referer is accepted/ },
   { rule: '不存明文：token、6 位码、会话只存 HMAC', source: '安全设计', match: /never stored|raw token is not stored|hmac is deterministic/ },
   { rule: '邮件扫描器的 GET 不消耗链接', source: '安全设计', match: /does not consume the link/ },

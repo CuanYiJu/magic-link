@@ -81,7 +81,7 @@ export class SessionService {
     const session: SessionRecord = {
       id: newId(),
       userId,
-      tokenHash: hmac(this.config.secret, 'session', token),
+      tokenHash: await hmac(this.config.secret, 'session', token),
       createdAt: now,
       expiresAt: this.expiryFrom(now, now),
       lastSeenAt: now,
@@ -100,7 +100,7 @@ export class SessionService {
    */
   async resolve(token: string | null | undefined): Promise<ActiveSession | null> {
     if (!token) return null;
-    const session = await this.store.findByTokenHash(hmac(this.config.secret, 'session', token));
+    const session = await this.store.findByTokenHash(await hmac(this.config.secret, 'session', token));
     if (!session || session.revokedAt) return null;
     const now = this.clock.now();
     if (session.expiresAt <= now) return null;
@@ -126,7 +126,7 @@ export class SessionService {
 
   async revokeToken(token: string | null | undefined): Promise<void> {
     if (!token) return;
-    const session = await this.store.findByTokenHash(hmac(this.config.secret, 'session', token));
+    const session = await this.store.findByTokenHash(await hmac(this.config.secret, 'session', token));
     if (session && !session.revokedAt) await this.store.revoke(session.id, this.clock.now());
   }
 

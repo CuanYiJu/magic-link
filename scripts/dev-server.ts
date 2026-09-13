@@ -15,10 +15,10 @@ import {
   MemoryTokenStore,
   MemoryUserStore,
   ResendMailer,
-  SmtpMailer,
   createHandlers,
   resolveConfig,
 } from '../src/index.ts';
+import { SmtpMailer } from '../src/mailers/smtp.ts';
 
 const port = Number(process.env.PORT ?? 3000);
 const config = resolveConfig({

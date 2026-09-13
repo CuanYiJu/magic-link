@@ -14,18 +14,22 @@ export interface ResendMailerOptions {
  */
 export class ResendMailer implements Mailer {
   private readonly opts: ResendMailerOptions;
-  private readonly fetchFn: typeof fetch;
   private readonly endpoint: string;
 
   constructor(opts: ResendMailerOptions) {
     this.opts = opts;
     if (!opts.apiKey) throw new Error('ResendMailer: apiKey is required');
-    this.fetchFn = opts.fetch ?? fetch;
     this.endpoint = opts.endpoint ?? 'https://api.resend.com/emails';
   }
 
   async send(message: EmailMessage): Promise<void> {
-    const res = await this.fetchFn(this.endpoint, {
+    // Do not cache or store the global fetch: on Cloudflare Workers it must be
+    // invoked as a plain global call. Storing it in a property and calling
+    // `this.fetchFn(...)` binds `this` to the mailer and Workers throws
+    // "Illegal invocation: function called with incorrect `this` reference".
+    // Node tolerates that, which is why only Workers showed it.
+    const fetchFn: typeof fetch = this.opts.fetch ?? ((input, init) => fetch(input, init));
+    const res = await fetchFn(this.endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.opts.apiKey}`,

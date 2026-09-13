@@ -20,8 +20,8 @@ export { PgSessionStore, PgTokenStore, PgUserStore } from './stores/postgres.ts'
 export type { SqlClient } from './stores/postgres.ts';
 export { CaptureMailer, ConsoleMailer } from './mailers/console.ts';
 export { ResendMailer } from './mailers/resend.ts';
-export { SmtpMailer } from './mailers/smtp.ts';
-export type { SmtpMailerOptions } from './mailers/smtp.ts';
+// SmtpMailer is Node-only (nodemailer) and lives at the './smtp' subpath so the
+// main entry stays free of Node built-ins and runs on Cloudflare Workers.
 export { renderLoginEmail } from './email-template.ts';
 export type {
   Clock,

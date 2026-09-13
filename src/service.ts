@@ -118,8 +118,8 @@ export class MagicLinkService {
     const record: TokenRecord = {
       id: newId(),
       email,
-      tokenHash: hmac(this.deps.config.secret, 'link', token),
-      codeHash: hmac(this.deps.config.secret, 'code', code),
+      tokenHash: await hmac(this.deps.config.secret, 'link', token),
+      codeHash: await hmac(this.deps.config.secret, 'code', code),
       createdAt: now,
       expiresAt: new Date(now.getTime() + this.deps.config.linkTtlMs),
       consumedAt: null,
@@ -161,7 +161,7 @@ export class MagicLinkService {
     const parsed = tokenSchema.safeParse(token);
     if (!parsed.success) return { status: 'invalid' };
 
-    const record = await this.deps.tokens.findByTokenHash(hmac(this.deps.config.secret, 'link', parsed.data));
+    const record = await this.deps.tokens.findByTokenHash(await hmac(this.deps.config.secret, 'link', parsed.data));
     if (!record) return { status: 'invalid' };
     if (record.consumedAt) return { status: 'used' };
     if (record.expiresAt <= this.clock.now()) return { status: 'expired' };
@@ -182,7 +182,7 @@ export class MagicLinkService {
     if (record.expiresAt <= this.clock.now()) return { status: 'expired' };
     if (record.codeAttempts >= this.deps.config.maxCodeAttempts) return { status: 'too_many_attempts' };
 
-    if (!safeEqualHex(record.codeHash, hmac(this.deps.config.secret, 'code', digits))) {
+    if (!safeEqualHex(record.codeHash, await hmac(this.deps.config.secret, 'code', digits))) {
       const attempts = await this.deps.tokens.incrementCodeAttempts(record.id);
       if (attempts >= this.deps.config.maxCodeAttempts) {
         // Burn the record so the link in the same email cannot be brute-forced either.

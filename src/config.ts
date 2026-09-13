@@ -49,6 +49,11 @@ export interface MagicLinkConfig {
 
 export type MagicLinkConfigInput = Partial<MagicLinkConfig> & Pick<MagicLinkConfig, 'secret' | 'baseUrl' | 'emailFrom'>;
 
+function nodeEnv(): Record<string, string | undefined> {
+  const g = globalThis as { process?: { env?: Record<string, string | undefined> } };
+  return g.process?.env ?? {};
+}
+
 export const DEFAULT_RATE_LIMITS: MagicLinkConfig['rateLimits'] = {
   perEmail: { max: 3, windowMs: 10 * MINUTE },
   perEmailDaily: { max: 10, windowMs: DAY },
@@ -94,8 +99,11 @@ export function resolveConfig(input: MagicLinkConfigInput): MagicLinkConfig {
   };
 }
 
-/** Build a config from environment variables (see .env.example). */
-export function configFromEnv(env: Record<string, string | undefined> = process.env): MagicLinkConfig {
+/**
+ * Build a config from environment variables (see .env.example). On Cloudflare
+ * Workers pass the `env` binding explicitly; `process` does not exist there.
+ */
+export function configFromEnv(env: Record<string, string | undefined> = nodeEnv()): MagicLinkConfig {
   const required = (name: string): string => {
     const v = env[name];
     if (!v) throw new Error(`magic-link: missing environment variable ${name}`);

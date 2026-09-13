@@ -50,7 +50,7 @@ export class SmtpMailer implements Mailer {
   }
 
   /** Build from SMTP_* environment variables; returns null when SMTP_HOST is unset. */
-  static fromEnv(env: Record<string, string | undefined> = process.env): SmtpMailer | null {
+  static fromEnv(env: Record<string, string | undefined> = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {}): SmtpMailer | null {
     if (!env.SMTP_HOST) return null;
     const port = Number(env.SMTP_PORT ?? 587);
     if (!Number.isInteger(port) || port <= 0) throw new Error('SmtpMailer: SMTP_PORT must be a positive integer');
