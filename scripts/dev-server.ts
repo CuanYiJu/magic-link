@@ -1,7 +1,8 @@
 /**
  * Local demo: `npm run dev`, open http://localhost:3000/login, submit an
  * email, read the link and code from the terminal, log in either way.
- * Uses in-memory stores and the console mailer unless RESEND_API_KEY is set.
+ * Uses in-memory stores and the console mailer unless RESEND_API_KEY
+ * (Resend) or SMTP_HOST (any SMTP server) is set.
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
@@ -13,6 +14,7 @@ import {
   MemoryTokenStore,
   MemoryUserStore,
   ResendMailer,
+  SmtpMailer,
   createHandlers,
   resolveConfig,
 } from '../src/index.ts';
@@ -30,7 +32,9 @@ const service = new MagicLinkService({
   tokens: new MemoryTokenStore(),
   sessions: new MemorySessionStore(),
   users: new MemoryUserStore(),
-  mailer: process.env.RESEND_API_KEY ? new ResendMailer({ apiKey: process.env.RESEND_API_KEY }) : new ConsoleMailer(),
+  mailer: process.env.RESEND_API_KEY
+    ? new ResendMailer({ apiKey: process.env.RESEND_API_KEY })
+    : (SmtpMailer.fromEnv() ?? new ConsoleMailer()),
   rateLimiter: new MemoryRateLimiter(),
 });
 const handlers = createHandlers(service, { trustProxy: false });

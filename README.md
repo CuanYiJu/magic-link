@@ -29,6 +29,7 @@ magic-link/
 │   ├── stores/postgres.ts Postgres 存储（pg / Drizzle 的 $client 直接可用）
 │   ├── mailers/console.ts 打印到终端 / 捕获到内存
 │   ├── mailers/resend.ts  Resend REST API
+│   ├── mailers/smtp.ts    任何 SMTP 服务器（自建或托管商入口，nodemailer）
 │   └── index.ts          公共导出
 ├── migrations/0001_magic_link.sql   auth_tokens、sessions 两张表
 ├── scripts/dev-server.ts            本地演示服务器（node:http）
@@ -47,13 +48,13 @@ cd magic-link && npm install
 npm run check
 ```
 
-`check` = `tsc --noEmit` + 43 个测试。本地演示：
+`check` = `tsc --noEmit` + 65 个测试。`npm run test:report` 会把结果渲染成 [`test-report.html`](test-report.html)（规则覆盖表 + 逐条结果 + 人工验收清单）。本地演示：
 
 ```bash
 npm run dev
 ```
 
-打开 <http://localhost:3000/login>，输入邮箱；邮件会打印在终端里，点链接或在页面输入 6 位码都能登录。设置 `RESEND_API_KEY` 后改为真实发信（见 `.env.example`）。
+打开 <http://localhost:3000/login>，输入邮箱；邮件会打印在终端里，点链接或在页面输入 6 位码都能登录。设置 `RESEND_API_KEY` 或 `SMTP_HOST` 后改为真实发信（见下面「配置真实发信」）。
 
 ## 接口
 
@@ -124,6 +125,88 @@ const session = await auth.getSession((await cookies()).get(auth.config.cookieNa
 ## 环境变量
 
 见 [`.env.example`](.env.example)。`MAGIC_LINK_SECRET` 至少 32 个字符，轮换后所有会话与未用的链接一起失效。`APP_BASE_URL` 除 `localhost` 外必须是 `https`，否则启动报错；cookie 的 `Secure` 也由它决定。
+
+## 配置真实发信
+
+代码里发信只依赖一个 `Mailer` 接口（一个 `send` 方法）。带了两种实现：`ResendMailer`（Resend 的 REST API）和 `SmtpMailer`（任何 SMTP 服务器，自建或托管商的 SMTP 入口都行）。演示服务器按环境变量选择：有 `RESEND_API_KEY` 走 Resend，否则有 `SMTP_HOST` 走 SMTP，都没有就打印到终端。
+
+不管走哪条路，都要先做同一件事：**发信域名的 DNS**。
+
+**第 0 步：域名的 SPF / DKIM / DMARC**
+
+登录邮件要进收件箱，收件方（Gmail、Outlook、QQ）看的是三条 DNS 记录：SPF（哪些服务器可以替这个域名发信）、DKIM（邮件签名的公钥）、DMARC（前两条不通过时怎么处理）。用 Resend 时它会把要加的记录列出来；自建时要自己生成 DKIM 密钥并配置。三条都没有，邮件基本进垃圾箱或被拒收（计划书 6.4 上线清单里的 SPF / DKIM / DMARC 就是这一步）。
+
+**路线 A：Resend（推荐，免费额度每月 3,000 封）**
+
+1. 到 resend.com 注册，Domains 里添加域名（例如 `kaiju.example`），按它给的 DKIM / SPF / DMARC 记录到域名注册商处逐条添加，等状态变为 Verified。
+2. API Keys 里建一把有发送权限的 key。
+3. 域名还没验证时想先试：Resend 允许从 `onboarding@resend.dev` 发，但只能发给你 Resend 账号自己的邮箱。
+
+`.env` 里填：
+
+```
+MAGIC_LINK_SECRET=<48 字节随机串，见下>
+APP_BASE_URL=https://kaiju.example
+EMAIL_FROM=开局 <login@kaiju.example>
+RESEND_API_KEY=re_xxxxxxxxx
+```
+
+**路线 B：自建邮件服务器（SMTP）**
+
+可以，但要清楚代价：发信的信誉绑在**服务器的 IP** 上。家庭宽带和多数云主机的 25 端口默认封禁，IP 段本身在黑名单里的也常见，而且反向 DNS（PTR）必须指回你的主机名。做得到这些再考虑自建；否则用托管商的 SMTP 入口（Resend、Postmark、SES、Mailgun 都提供），配置方式和自建完全一样，只是 `SMTP_HOST` 不同。
+
+自建时的最小要求：
+
+1. 一台有固定公网 IP、25 端口出站可用的主机，PTR 记录指向 `mail.kaiju.example`，正向解析也一致。
+2. 装一个 MTA：Postfix + OpenDKIM，或一体化的 Mailcow / Stalwart / Maddy。给 `kaiju.example` 生成 DKIM 密钥，把公钥、SPF（`v=spf1 ip4:<你的IP> -all`）和 DMARC 写进 DNS。
+3. 开一个提交端口给应用用：587（STARTTLS）或 465（TLS），配一个专用账号，只允许从 `login@kaiju.example` 发。不要开放式中继。
+4. 用 mail-tester.com 发一封，分数 ≥ 9/10 再上线。
+
+`.env` 里填：
+
+```
+MAGIC_LINK_SECRET=<48 字节随机串，见下>
+APP_BASE_URL=https://kaiju.example
+EMAIL_FROM=开局 <login@kaiju.example>
+SMTP_HOST=mail.kaiju.example
+SMTP_PORT=587
+SMTP_USER=login@kaiju.example
+SMTP_PASS=<账号密码>
+```
+
+同一台内网里、靠 IP 白名单免认证的中继：`SMTP_PORT=25`，`SMTP_USER` / `SMTP_PASS` 留空。自签证书的服务器加 `SMTP_REJECT_UNAUTHORIZED=false`，仅限自己控制的主机。
+
+**两条路线共同的变量**
+
+生成密钥：
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+- `EMAIL_FROM` 必须用配好 DNS 的域名，前面的显示名就是收件人看到的发件人。
+- `APP_BASE_URL` 是邮件里链接指向的地址，必须是用户真的能打开的。本地用真实邮箱测试可以保留 `http://localhost:3000`，但链接只在跑服务器的这台机器上能点开。
+- `MAGIC_LINK_SECRET` 至少 32 个字符；之后换掉会让所有人退出登录、所有未用的链接失效。
+
+**用真实邮件跑本地演示**
+
+演示服务器读的是 `process.env`，不会自己加载 `.env`，所以把文件交给 Node：
+
+```bash
+node --env-file=.env scripts/dev-server.ts
+```
+
+在登录页填自己的邮箱，几秒内应该收到。发送失败时服务器会打印原因：Resend 返回 HTTP 状态和错误正文（域名未验证、发件地址不在域名下、key 无效），SMTP 返回服务器的应答码（535 认证失败、550 拒绝中继、证书错误）。
+
+**正式环境（Next.js / Vercel）**
+
+配置用 `configFromEnv()`，邮件用 `new ResendMailer({ apiKey: process.env.RESEND_API_KEY! })` 或 `SmtpMailer.fromEnv()!`（见上面的接入示例）。Vercel 上把变量填进项目的 Environment Variables，不要提交 `.env`；密钥、key、SMTP 密码都不进 git。注意 Serverless 环境每次冷启动都会新建 SMTP 连接，对自建服务器意味着更多握手，量大时 Resend 这类 API 更省。
+
+**发信通了之后的检查**
+
+- 分别发一封到 Gmail、Outlook、QQ 邮箱，确认都不进垃圾箱。
+- 头两周低量发信预热域名 / IP（计划书 6.4）。
+- 看退信。登录邮件硬退信基本是地址打错，登录页可以提示用户检查。
 
 ## 还没做、故意留给应用层的
 

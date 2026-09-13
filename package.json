@@ -18,10 +18,12 @@
     "test:report": "node scripts/test-report.ts"
   },
   "dependencies": {
+    "nodemailer": "^10.0.9",
     "zod": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",
+    "@types/nodemailer": "^8.0.1",
     "typescript": "~6.0.3"
   }
 }
